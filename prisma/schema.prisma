@@ -1,0 +1,161 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum PatientStatus {
+  NEW
+  IN_REVIEW
+  CRISIS_NOT_PROCESSABLE
+  MINOR_REQUIRES_ADULT
+  NO_MATCH_AVAILABLE
+  WAITING_PSYCHOLOGIST_CONFIRMATION
+  RECOMMENDATION_SENT
+  FIRST_SESSION_BOOKED
+  FIRST_SESSION_COMPLETED
+  SECOND_SESSION_BOOKED
+  SECOND_SESSION_COMPLETED
+  REMATCH_REQUESTED
+  CLOSED_SUCCESS
+  CLOSED_NO_RESPONSE
+  CLOSED_NO_FIT
+}
+
+enum PsychologistStatus {
+  PENDING_VALIDATION
+  ACTIVE
+  LOW_AVAILABILITY
+  PAUSED_FULL_AGENDA
+  PAUSED_QUALITY
+  INACTIVE
+}
+
+enum MatchingStatus {
+  PROPOSED_INTERNALLY
+  PSYCHOLOGIST_CONFIRMED
+  SENT_TO_PATIENT
+  ACCEPTED_BY_PATIENT
+  REJECTED_BY_PATIENT
+  NO_RESPONSE
+  FIRST_SESSION_COMPLETED
+  SECOND_SESSION_COMPLETED
+  REMATCH_REQUESTED
+}
+
+model Patient {
+  id               String        @id @default(cuid())
+  name             String
+  email            String        @unique
+  phone            String?
+  isAdult          Boolean       @default(true)
+  reason           String?
+  severity         String?
+  immediateRisk    Boolean       @default(false)
+  previousTherapy  String?
+  modality         String?
+  location         String?
+  budget           String?
+  startTimeline    String?
+  availability     String[]
+  preferences      String[]
+  consentAccepted  Boolean       @default(false)
+  status           PatientStatus @default(NEW)
+  internalNotes    String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  matchings        Matching[]
+  sessions         Session[]
+  metricEvents     MetricEvent[]
+}
+
+model Psychologist {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  phone             String?
+  city              String?
+  modality          String[]
+  specialties       String[]
+  price             Int?
+  availability      String[]
+  languages         String[]
+  gender            String?
+  experience        Int?
+  acceptsNewPatients Boolean           @default(true)
+  status            PsychologistStatus @default(PENDING_VALIDATION)
+  internalNotes     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  matchings         Matching[]
+  sessions          Session[]
+}
+
+model Matching {
+  id              String        @id @default(cuid())
+  patientId       String
+  psychologistId  String
+  score           Int?
+  matchReason     String?
+  status          MatchingStatus @default(PROPOSED_INTERNALLY)
+  internalNotes   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  patient         Patient      @relation(fields: [patientId], references: [id])
+  psychologist    Psychologist @relation(fields: [psychologistId], references: [id])
+  sessions        Session[]
+  metricEvents    MetricEvent[]
+}
+
+model Session {
+  id                      String       @id @default(cuid())
+  patientId               String
+  psychologistId          String
+  matchingId              String?
+  firstSessionDate        DateTime?
+  firstSessionBooked      Boolean      @default(false)
+  firstSessionCompleted   Boolean      @default(false)
+  secondSessionDate       DateTime?
+  secondSessionBooked     Boolean      @default(false)
+  secondSessionCompleted  Boolean      @default(false)
+  noContinuityReason      String?
+  patientFeedback         String?
+  psychologistFeedback    String?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  patient                 Patient      @relation(fields: [patientId], references: [id])
+  psychologist            Psychologist @relation(fields: [psychologistId], references: [id])
+  matching                Matching?    @relation(fields: [matchingId], references: [id])
+}
+
+model MetricEvent {
+  id          String   @id @default(cuid())
+  eventName   String
+  patientId   String?
+  matchingId  String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  patient     Patient?  @relation(fields: [patientId], references: [id])
+  matching    Matching? @relation(fields: [matchingId], references: [id])
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
