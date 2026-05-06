@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import SessionsManager from "./SessionsManager";
 
 export default async function AdminSesionesPage() {
-  const sessions = await prisma.session.findMany({
+  const rawSessions = await prisma.session.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       patient: { select: { id: true, name: true } },
@@ -10,6 +10,14 @@ export default async function AdminSesionesPage() {
       matching: { select: { id: true, score: true } },
     },
   });
+
+  const sessions = rawSessions.map((s) => ({
+    ...s,
+    firstSessionDate: s.firstSessionDate?.toISOString() ?? null,
+    secondSessionDate: s.secondSessionDate?.toISOString() ?? null,
+    createdAt: s.createdAt.toISOString(),
+    updatedAt: s.updatedAt.toISOString(),
+  }));
 
   return (
     <div className="p-8">
