@@ -37,8 +37,8 @@ export default function PsychologistEditor({ psychologist }: { psychologist: any
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        specialties: form.specialties.split(",").map((s) => s.trim()).filter(Boolean),
-        languages: form.languages.split(",").map((s) => s.trim()).filter(Boolean),
+        specialties: form.specialties.split(",").map((s: string) => s.trim()).filter(Boolean),
+        languages: form.languages.split(",").map((s: string) => s.trim()).filter(Boolean),
         price: form.price ? parseInt(form.price) : null,
         experience: form.experience ? parseInt(form.experience) : null,
       }),
